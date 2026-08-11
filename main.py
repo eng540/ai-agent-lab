@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from agents import Runner
 
-from agent import agent
+from agent import run_agent
 
 
-app = FastAPI(title="AI Agent Lab")
+app = FastAPI(
+    title="AI Agent Lab",
+    version="0.2.0",
+)
 
 
 class AskRequest(BaseModel):
@@ -16,17 +18,15 @@ class AskRequest(BaseModel):
 def health():
     return {
         "status": "ok",
-        "service": "AI Agent Lab"
+        "service": "AI Agent Lab",
+        "version": "0.2.0",
     }
 
 
 @app.post("/ask")
-async def ask(request: AskRequest):
-    result = await Runner.run(
-        agent,
-        request.message
-    )
+def ask(request: AskRequest):
+    answer = run_agent(request.message)
 
     return {
-        "answer": result.final_output
+        "answer": answer
     }
