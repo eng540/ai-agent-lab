@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AI Agent Lab</title><link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<main class="shell">
+<header><div><small>AI AGENT LAB · V1.2</small><h1>وكيل ذكي ينفّذ المهام</h1><p>اكتب المهمة، ودع الوكيل يفحص مساحة العمل ويستخدم الأدوات وينفّذ الخطوات ثم يتحقق من النتيجة.</p></div><div id="status" class="status">...</div></header>
+<section class="layout">
+<aside class="panel"><div class="title"><b>Workspace</b><span id="count">—</span></div><div id="files">جاري التحميل...</div></aside>
+<section class="panel chat"><div class="title"><b>Agent Console</b><span class="live">LIVE</span></div><div id="messages" class="messages"><div class="msg agent"><b>Agent</b><div>مرحباً. أعطني مهمة حقيقية وسأنفذها داخل مساحة العمل.</div></div></div>
+<div class="examples"><button data-p="استعرض مساحة العمل وأخبرني بحالتها.">حالة المشروع</button><button data-p="اقرأ README.md ثم أنشئ تقريراً في reports/project-review.md يلخص ما وجدته، وبعدها تحقق من التقرير.">فحص وإنشاء تقرير</button></div>
+<form id="form"><textarea id="prompt" placeholder="مثال: اقرأ README وأنشئ تقريراً عنه..." required></textarea><button id="send">تنفيذ المهمة</button></form></section>
+</section><footer>Gemini · Tools · Workspace · Multi-step Execution · Verification</footer>
+</main><script src="/static/app.js"></script></body></html>
