@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import time
 from typing import Any
 
 from dotenv import load_dotenv
@@ -18,8 +17,6 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 MODEL_ID = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 THINKING_LEVEL = os.environ.get("GEMINI_THINKING_LEVEL", "low")
 MAX_TOOL_ROUNDS = int(os.environ.get("MAX_TOOL_ROUNDS", "4"))
-MAX_RETRIES = int(os.environ.get("GEMINI_MAX_RETRIES", "2"))
-RETRY_BASE_SECONDS = float(os.environ.get("GEMINI_RETRY_BASE_SECONDS", "2"))
 
 TOOLS = [
     {"type": "function", "name": "list_files", "description": "List files inside the agent workspace.", "parameters": {"type": "object", "properties": {"relative_dir": {"type": "string"}}}},
@@ -46,24 +43,10 @@ def _generation_config() -> dict[str, Any]:
     return {"thinking_level": level, "temperature": 0.2, "max_output_tokens": 4096}
 
 
-def _is_retryable(exc: Exception) -> bool:
-    text = str(exc).lower()
-    return any(x in text for x in ("429", "rate limit", "resource_exhausted", "too many requests", "quota"))
-
-
 def _create_interaction(**kwargs):
-    last_exc = None
-    for attempt in range(MAX_RETRIES + 1):
-        try:
-            return client.interactions.create(**kwargs)
-        except Exception as exc:
-            last_exc = exc
-            if not _is_retryable(exc) or attempt >= MAX_RETRIES:
-                raise
-            delay = RETRY_BASE_SECONDS * (2 ** attempt)
-            logger.warning("Gemini quota/rate limit; retrying in %.1fs", delay)
-            time.sleep(delay)
-    raise last_exc
+    # Do not blindly retry quota exhaustion: a project-level quota such as
+    # GenerateRequestsPerDayPerModel will not recover from a 2-second retry.
+    return client.interactions.create(**kwargs)
 
 
 def _execute_tool(name: str, arguments: dict):
