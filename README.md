@@ -2,16 +2,37 @@
 
 Experimental Agent Runtime built around a replaceable model provider.
 
-## V2
+## Current architecture
 
-V2 introduces:
+```text
+FastAPI
+  -> API Router
+      -> Agent Runtime
+          -> Session Memory
+          -> Model Provider (Gemini)
+          -> Tool Registry
+              -> Tool Executor
+                  -> Registered Tools
+```
 
-- FastAPI API layer
+## V2 — Runtime foundation
+
 - provider abstraction for Gemini
 - session IDs and run IDs
 - bounded short-term conversation memory
-- structured agent responses
-- clear separation between API, runtime, memory, and model provider
+- structured request/response schemas
+- separation between API, runtime, memory, and provider
+
+## V3 — Tool system foundation
+
+- typed tool abstraction
+- central tool registry
+- isolated tool executor
+- explicit confirmation gate for protected tools
+- safe built-in `echo` tool for runtime tests
+- `GET /tools` for tool metadata
+
+The runtime deliberately does not execute arbitrary shell commands, code, network requests, or repository writes. Those capabilities should be added as explicitly scoped tools with their own permission model and tests.
 
 ## Run
 
@@ -25,6 +46,10 @@ Health:
 
 `GET /`
 
+Tool metadata:
+
+`GET /tools`
+
 Ask:
 
 `POST /ask`
@@ -36,14 +61,11 @@ Ask:
 }
 ```
 
-## Architecture
+## Roadmap
 
-```text
-FastAPI
-  -> API Router
-      -> Agent Runtime
-          -> Session Memory
-          -> Model Provider (Gemini)
-```
-
-The runtime is intentionally small. Tools, persistent memory, planning, execution loops, and observability are planned as subsequent layers rather than hidden inside the model provider.
+1. V4 agent loop: plan → execute → observe → reflect.
+2. Persistent project memory and run/event records.
+3. GitHub, filesystem, web, and HTTP tools with explicit permissions.
+4. Observability: structured logs, traces, latency, token/tool metrics.
+5. Evaluation suite and CI gates.
+6. Multi-agent orchestration only after the single-agent runtime is stable.
