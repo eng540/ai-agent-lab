@@ -2,14 +2,23 @@ from uuid import uuid4
 
 from app.memory.short_term import InMemoryStore
 from app.providers.gemini import GeminiProvider
+from app.tools.executor import ToolExecutor
+from app.tools.registry import ToolRegistry
 
 
 class AgentRuntime:
-    """V2 runtime: session context + provider abstraction + run identity."""
+    """Agent runtime with sessions, provider abstraction, and tool execution."""
 
-    def __init__(self, provider: GeminiProvider | None = None, memory: InMemoryStore | None = None):
+    def __init__(
+        self,
+        provider: GeminiProvider | None = None,
+        memory: InMemoryStore | None = None,
+        tools: ToolRegistry | None = None,
+    ) -> None:
         self.provider = provider or GeminiProvider()
         self.memory = memory or InMemoryStore()
+        self.tools = tools or ToolRegistry()
+        self.tool_executor = ToolExecutor(self.tools)
 
     def run(self, message: str, session_id: str | None = None) -> dict:
         session_id = session_id or uuid4().hex
