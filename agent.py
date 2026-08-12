@@ -14,7 +14,8 @@ logger = logging.getLogger("ai-agent-lab")
 
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 MODEL_ID = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-MAX_TOOL_ROUNDS = 8
+THINKING_LEVEL = os.environ.get("GEMINI_THINKING_LEVEL", "low")
+MAX_TOOL_ROUNDS = int(os.environ.get("MAX_TOOL_ROUNDS", "8"))
 
 TOOLS = [
     {"type": "function", "name": "list_files", "description": "List files inside the agent workspace.", "parameters": {"type": "object", "properties": {"relative_dir": {"type": "string"}}}},
@@ -33,6 +34,13 @@ Never pretend an action happened. Only use the provided workspace tools.
 Inspect relevant files before conclusions. After creating an important file, read it back.
 Keep tool use focused and stop when the objective is complete.
 """
+
+
+def _generation_config():
+    level = THINKING_LEVEL.lower().strip()
+    if level not in {"low", "high"}:
+        level = "low"
+    return {"thinking_level": level, "temperature": 0.2, "max_output_tokens": 8192}
 
 
 def _execute_tool(name: str, arguments: dict):
@@ -54,7 +62,7 @@ def run_agent(message: str, event_callback=None) -> str:
             input=message,
             tools=TOOLS,
             system_instruction=SYSTEM_INSTRUCTION,
-            generation_config={"thinking_level": "medium", "temperature": 0.2, "max_output_tokens": 8192},
+            generation_config=_generation_config(),
         )
 
         for round_number in range(1, MAX_TOOL_ROUNDS + 1):
@@ -88,7 +96,7 @@ def run_agent(message: str, event_callback=None) -> str:
                 input=results,
                 tools=TOOLS,
                 system_instruction=SYSTEM_INSTRUCTION,
-                generation_config={"thinking_level": "medium", "temperature": 0.2, "max_output_tokens": 8192},
+                generation_config=_generation_config(),
             )
 
         emit("stopped", "تم بلوغ الحد الآمن لجولات الأدوات")
