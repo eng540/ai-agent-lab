@@ -4,25 +4,24 @@ from agent import run_agent
 
 app = FastAPI(
     title="AI Agent Lab",
-    version="0.2.0",
+    version="1.2.0",
 )
+
 
 class AskRequest(BaseModel):
     message: str
+
 
 @app.get("/")
 def health():
     return {
         "status": "ok",
         "service": "AI Agent Lab",
-        "version": "0.2.0",
+        "version": "1.2.0",
+        "capabilities": ["chat", "tools", "workspace", "multi_step_execution", "verification"],
     }
+
 
 @app.post("/ask")
 def ask(request: AskRequest):
-    # استدعاء الـ Agent
-    answer = run_agent(request.message)
-
-    return {
-        "answer": answer
-    }
+    return {"answer": run_agent(request.message)}
