@@ -1,28 +1,11 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-from agent import run_agent
+
+from app.api import router
 
 app = FastAPI(
     title="AI Agent Lab",
-    version="0.2.0",
+    version="2.0.0",
+    description="Experimental Agent Runtime with provider abstraction and session memory.",
 )
 
-class AskRequest(BaseModel):
-    message: str
-
-@app.get("/")
-def health():
-    return {
-        "status": "ok",
-        "service": "AI Agent Lab",
-        "version": "0.2.0",
-    }
-
-@app.post("/ask")
-def ask(request: AskRequest):
-    # استدعاء الـ Agent
-    answer = run_agent(request.message)
-
-    return {
-        "answer": answer
-    }
+app.include_router(router)
