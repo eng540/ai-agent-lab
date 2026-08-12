@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import Any
 
 from dotenv import load_dotenv
 from google import genai
@@ -15,7 +16,7 @@ logger = logging.getLogger("ai-agent-lab")
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 MODEL_ID = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 THINKING_LEVEL = os.environ.get("GEMINI_THINKING_LEVEL", "low")
-MAX_TOOL_ROUNDS = int(os.environ.get("MAX_TOOL_ROUNDS", "8"))
+MAX_TOOL_ROUNDS = int(os.environ.get("MAX_TOOL_ROUNDS", "4"))
 
 TOOLS = [
     {"type": "function", "name": "list_files", "description": "List files inside the agent workspace.", "parameters": {"type": "object", "properties": {"relative_dir": {"type": "string"}}}},
@@ -23,7 +24,6 @@ TOOLS = [
     {"type": "function", "name": "write_file", "description": "Create or replace a UTF-8 text file inside the agent workspace.", "parameters": {"type": "object", "properties": {"relative_path": {"type": "string"}, "content": {"type": "string"}}, "required": ["relative_path", "content"]}},
     {"type": "function", "name": "project_status", "description": "Return workspace status and file inventory.", "parameters": {"type": "object", "properties": {}}},
 ]
-
 TOOL_FUNCTIONS = {"list_files": list_files, "read_file": read_file, "write_file": write_file, "project_status": project_status}
 
 SYSTEM_INSTRUCTION = """
@@ -36,11 +36,17 @@ Keep tool use focused and stop when the objective is complete.
 """
 
 
-def _generation_config():
+def _generation_config() -> dict[str, Any]:
     level = THINKING_LEVEL.lower().strip()
     if level not in {"low", "high"}:
         level = "low"
-    return {"thinking_level": level, "temperature": 0.2, "max_output_tokens": 8192}
+    return {"thinking_level": level, "temperature": 0.2, "max_output_tokens": 4096}
+
+
+def _create_interaction(**kwargs):
+    # Do not blindly retry quota exhaustion: a project-level quota such as
+    # GenerateRequestsPerDayPerModel will not recover from a 2-second retry.
+    return client.interactions.create(**kwargs)
 
 
 def _execute_tool(name: str, arguments: dict):
@@ -57,7 +63,7 @@ def run_agent(message: str, event_callback=None) -> str:
 
     try:
         emit("planning", "بدأ تحليل المهمة")
-        interaction = client.interactions.create(
+        interaction = _create_interaction(
             model=MODEL_ID,
             input=message,
             tools=TOOLS,
@@ -82,7 +88,6 @@ def run_agent(message: str, event_callback=None) -> str:
                 except Exception as exc:
                     payload = {"ok": False, "error": str(exc)}
                     emit("tool_failed", f"{call.name}: {exc}")
-
                 results.append({
                     "type": "function_result",
                     "name": call.name,
@@ -90,7 +95,7 @@ def run_agent(message: str, event_callback=None) -> str:
                     "result": [{"type": "text", "text": json.dumps(payload, ensure_ascii=False)}],
                 })
 
-            interaction = client.interactions.create(
+            interaction = _create_interaction(
                 model=MODEL_ID,
                 previous_interaction_id=interaction.id,
                 input=results,
